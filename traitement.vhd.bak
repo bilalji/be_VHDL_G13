@@ -1,0 +1,111 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
+
+
+entity traitement is
+port( 
+	clk, raz_n, start_stop, continu    : in std_logic ;
+	in_freq_anemometre  : in std_logic;
+	data_valid : out std_logic ; 
+	data_anemometre : out std_logic_vector(7 downto 0)
+);
+
+end entity;
+
+architecture bhv of traitement is
+type etats is (etat_a, etat_b);
+signal state_actuelle, state_suivante    : etats;
+signal start : std_logic;
+signal stop : std_logic;
+signal enable2 : std_logic;
+signal raz : std_logic;
+signal S2 : std_logic;
+signal out_cpt1 : std_logic_vector(25 downto 0);
+signal out_cpt2 : std_logic_vector (7 downto 0);
+signal out_comp : std_logic;
+signal lim : std_logic_vector (25 downto 0);
+
+component detc_front is
+port( 
+	clk, sig : in std_logic;
+	front : out std_logic
+	);
+end component;
+
+component compteur is
+port( 
+	clk,raz_n, enable : in std_logic;
+	cmp: out std_logic_vector(25 downto 0)
+	);
+end component;
+
+component comparateur is
+port(   A,B  :      in  std_logic_vector(25 downto 0);
+    result :      out     std_logic);
+	
+end component;
+
+component sys_registre is
+	port( 
+		clk, enable, raz_n : in std_logic;
+		entree : in  std_logic_vector(7 downto 0);
+		sortie : out std_logic_vector(7 downto 0)
+		);
+end component;
+
+
+begin
+
+s2 <= start and enable2;
+ 
+raz <= (not raz_n) or out_comp;
+
+lim <= "10111110101111000001111111";
+
+ 
+compteur1:  compteur
+			 port map (clk =>clk,raz_n => raz  ,enable => enable2 ,cmp => out_cpt1);
+
+compa : comparateur port map (A => out_cpt1 , B => lim , result => out_comp);
+
+detecteur :  front_montant port map (clk => clk ,sig => in_freq_anemometre ,front => start);
+
+compteur2:  compteur
+			 port map (clk => clk, raz_n => raz ,enable => start and enable2, cmp => out_cpt2);
+			 
+registre1 : registre port map (clk => clk, enable => out_comp ,raz_n => not raz_n ,entree => out_cpt2, sortie =>data_anemometre); 
+
+
+pblocF : process  (state_actuelle, continu, start_stop, out_comp)
+begin
+case state_actuelle is
+when etat_a =>
+					if (continu = '1' or start_stop = '0') then state_suivante <= etat_b;
+					else state_suivante <= state_actuelle;
+					end if;
+when etat_b =>    
+					if (continu = '0' and out_comp = '1') then state_suivante <= etat_a;
+					else state_suivante <= state_actuelle;
+					end if;
+when others =>
+end case;
+
+end process pblocF;
+
+pblocM : process (clk)
+begin
+
+if clk'event and clk = '1' then
+        
+            state_actuelle <= state_suivante;
+            
+        end if;
+end process pBlocM;
+
+	enable2 <= '1' when state_actuelle = etat_b else '0';           
+	data_valid <= '1' when state_actuelle = etat_a;			  
+end bhv;
+
