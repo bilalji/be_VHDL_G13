@@ -1,0 +1,75 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity Gestion_ADC is
+  generic (
+    N : integer := 16
+  );
+
+  port (
+    Clk : in std_logic;
+    Raz_N : in std_logic;
+    Data_In : in std_logic_vector(N - 1 downto 0);
+    Cs_N, Clk_ADC : out std_logic;
+    Angle_Barre : out std_logic_vector(N - 1 downto 0)
+  );
+end Gestion_ADC;
+
+architecture Behavioral of Gestion_ADC is
+  signal Start_Conv : std_logic := '0';
+  signal Chip_Select : std_logic := '0';
+  signal Reg_Out : std_logic_vector(N - 1 downto 0) := (others => '0');
+  signal Clk_1M : std_logic := '0';
+
+  component div1M is
+    port (
+      clk_50 : in std_logic;
+      raz_n : in std_logic;
+      clk_1M : out std_logic
+    );
+  end component;
+
+  component gene_start_conv is
+    port (
+      raz_n : in std_logic;
+      clk_1M : in std_logic;
+      start_conv : out std_logic
+    );
+  end component;
+
+  component chipselect is
+    port (
+      start_c : in std_logic;
+      clk_1M : in std_logic;
+      raz_n : in std_logic;
+      cs : out std_logic
+    );
+  end component;
+
+  component reg_decalage is
+    port (
+      start_conv : in std_logic;
+      cs : in std_logic;
+      clk_1M : in std_logic;
+      raz_n : in std_logic;
+      data_in : in std_logic;
+      data_out : out std_logic_vector(N - 1 downto 0)
+    );
+  end component;
+
+  signal Clk_50 : std_logic;
+
+begin
+  U1: div1M port map (Clk_50, Raz_N, Clk_1M);
+  U2: gene_start_conv port map (Raz_N, Clk_1M, Start_Conv);
+  U3: chipselect port map (Start_Conv, Clk_1M, Raz_N, Chip_Select);
+  U4: reg_decalage port map (Start_Conv, Chip_Select, Clk_1M, Raz_N, Data_In, Reg_Out);
+
+  Clk_50 <= Clk;
+
+  Cs_N <= not Chip_Select;
+  Clk_ADC <= Clk_1M;
+  Angle_Barre <= Reg_Out;
+
+end Behavioral;

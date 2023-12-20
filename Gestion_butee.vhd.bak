@@ -1,0 +1,66 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity Gestion_butee is
+  port (
+    PWM : in std_logic;
+    Butee_D : in std_logic_vector(11 downto 0);
+    Butee_G : in std_logic_vector(7 downto 0);
+    Angle_Barre : in std_logic_vector(11 downto 0);
+    Sens : in std_logic;
+    Out_PWM : out std_logic;
+    Out_Sens : out std_logic;
+    F_D : out std_logic;
+    F_G : out std_logic;
+    Fin_Course_D : out std_logic;
+    Fin_Course_G : out std_logic
+  );
+end Gestion_butee;
+
+architecture Behavioral of Gestion_butee is
+  signal fin_course_droite : std_logic := '0';
+  signal fin_course_gauche : std_logic := '0';
+
+begin
+  controle_butee : process (PWM, Sens, Butee_G, Butee_D, Angle_Barre)
+  begin
+    if PWM = '1' then
+      if Sens = '1' then
+        if Angle_Barre >= Butee_D then
+          Out_PWM <= '1';
+          Out_Sens <= '0';
+          F_D <= '1';
+          fin_course_droite <= '1';
+        else
+          Out_PWM <= '0';
+          Out_Sens <= '1';
+          F_D <= '0';
+          fin_course_droite <= '0';
+        end if;
+      elsif Sens = '0' then
+        if Angle_Barre >= Butee_G then
+          Out_PWM <= '1';
+          Out_Sens <= '0';
+          F_G <= '1';
+          fin_course_gauche <= '1';
+        else
+          Out_PWM <= '0';
+          Out_Sens <= '0';
+          F_G <= '0';
+          fin_course_gauche <= '0';
+        end if;
+      end if;
+    else
+      Out_PWM <= '0';
+      Out_Sens <= '0';
+      F_D <= '0';
+      F_G <= '0';
+      fin_course_droite <= '0';
+      fin_course_gauche <= '0';
+    end if;
+
+    Fin_Course_D <= fin_course_droite;
+    Fin_Course_G <= fin_course_gauche;
+  end process;
+end Behavioral;

@@ -1,0 +1,37 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity Gestion_PWM is
+  Port ( Freq : in STD_LOGIC_VECTOR(15 downto 0);
+         Duty : in STD_LOGIC_VECTOR(15 downto 0);
+         Clk : in STD_LOGIC;
+         Raz_N : in STD_LOGIC;
+         Enable_PWM : in STD_LOGIC;
+         PWM : out STD_LOGIC);
+end Gestion_PWM;
+
+architecture Behavioral of Gestion_PWM is
+  signal pwm_internal : STD_LOGIC := '0';
+
+begin
+  process(Clk, Raz_N)
+  begin
+    if Raz_N = '0' then
+      pwm_internal <= '0';
+    elsif rising_edge(Clk) then
+      if Enable_PWM = '1' then
+        -- Implémentez la logique pour générer le signal PWM ici
+        -- Utilisez Freq et Duty pour déterminer la fréquence et le rapport cyclique
+        -- Assurez-vous de respecter les spécifications
+        pwm_internal <= ...; -- Mettez ici la logique de génération PWM
+      else
+        pwm_internal <= '0';
+      end if;
+    end if;
+  end process;
+
+  PWM <= pwm_internal;
+
+end Behavioral;
